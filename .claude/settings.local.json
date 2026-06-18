@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(git status:*)",
+      "mcp__nimbalyst-mcp__PromptForUserInput"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
