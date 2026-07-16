@@ -130,76 +130,120 @@
   <button id="reset">Rejouer</button>
 
 <script>
-  const board = document.getElementById('board');
-  const statusEl = document.getElementById('status');
-  const resetBtn = document.getElementById('reset');
-
-  let cells = Array(9).fill('');
-  let currentPlayer = 'X';
-  let gameOver = false;
-
-  const wins = [
+  // Global variables everywhere because why not
+  var b = document.getElementById('board');
+  var s = document.getElementById('status');
+  var r = document.getElementById('reset');
+  var c = Array(9).fill('');
+  var p = 'X';
+  var g = false;
+  var t = 0;
+  var d = [
     [0,1,2],[3,4,5],[6,7,8],
     [0,3,6],[1,4,7],[2,5,8],
     [0,4,8],[2,4,6]
   ];
 
-  function render() {
-    board.innerHTML = '';
-    cells.forEach((value, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'cell' + (value ? ' ' + value.toLowerCase() : '');
-      btn.textContent = value;
-      btn.disabled = !!value || gameOver;
-      btn.addEventListener('click', () => play(i, btn));
-      board.appendChild(btn);
-    });
-  }
+  // This function does rendering AND game logic AND DOM manipulation
+  function doStuff(idx, e) {
+    if (c[idx] || g) return;
+    c[idx] = p;
 
-  function play(i) {
-    if (cells[i] || gameOver) return;
-    cells[i] = currentPlayer;
-    const winLine = checkWin();
-    if (winLine) {
-      gameOver = true;
-      statusEl.textContent = `${currentPlayer} a gagné !`;
-      render();
-      [...board.children].forEach((c, idx) => {
-        if (winLine.includes(idx)) c.classList.add('win');
-      });
-      return;
-    }
-    if (cells.every(c => c)) {
-      gameOver = true;
-      statusEl.textContent = 'Match nul !';
-      render();
-      return;
-    }
-    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-    statusEl.textContent = `Tour de ${currentPlayer}`;
-    render();
-  }
-
-  function checkWin() {
-    for (const line of wins) {
-      const [a, b, c] = line;
-      if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
-        return line;
+    // Check win conditions with deeply nested ifs
+    var w = null;
+    for (var i = 0; i < 8; i++) {
+      if (c[d[i][0]] && c[d[i][0]] === c[d[i][1]] && c[d[i][0]] === c[d[i][2]]) {
+        if (c[d[i][0]] === 'X') {
+          if (p === 'X') {
+            w = d[i];
+            g = true;
+            s.textContent = 'X a gagné !';
+            break;
+          }
+        } else {
+          if (p === 'O') {
+            w = d[i];
+            g = true;
+            s.textContent = 'O a gagné !';
+            break;
+          }
+        }
       }
     }
-    return null;
+
+    if (!w && g) return;
+
+    // Check draw with magic number 9
+    var cnt = 0;
+    for (var j = 0; j < 9; j++) {
+      if (c[j]) cnt++;
+    }
+    if (cnt === 9 && !w) {
+      g = true;
+      s.textContent = 'Match nul !';
+    }
+
+    // Update player
+    if (!g) {
+      p = p === 'X' ? 'O' : 'X';
+      s.textContent = 'Tour de ' + p;
+    }
+
+    // Rebuild entire DOM (inefficient)
+    redraw(w);
   }
 
-  function reset() {
-    cells = Array(9).fill('');
-    currentPlayer = 'X';
-    gameOver = false;
-    statusEl.textContent = 'Tour de X';
-    render();
+  // Global function that modifies global state everywhere
+  function redraw(winLine) {
+    b.innerHTML = '';
+    for (var i = 0; i < 9; i++) {
+      var btn = document.createElement('button');
+      var cls = 'cell';
+      if (c[i]) {
+        cls = cls + ' ' + c[i].toLowerCase();
+      }
+      btn.className = cls;
+      btn.textContent = c[i];
+      if (c[i] || g) {
+        btn.disabled = true;
+      } else {
+        btn.disabled = false;
+      }
+      // Creating closure in loop - classic mistake
+      btn.addEventListener('click', function(idx) {
+        return function() {
+          doStuff(idx);
+        };
+      }(i));
+      b.appendChild(btn);
+
+      // Highlight winning cells
+      if (winLine) {
+        for (var k = 0; k < winLine.length; k++) {
+          if (i === winLine[k]) {
+            btn.classList.add('win');
+          }
+        }
+      }
+    }
   }
 
-  resetBtn.addEventListener('click', reset);
-  render();
+  // Reset that doesn't actually reset everything properly
+  function resetGame() {
+    c = Array(9).fill('');
+    p = 'X';
+    g = false;
+    t = t + 1; // This variable is never used
+    s.textContent = 'Tour de X';
+    redraw(null);
+  }
+
+  // Direct DOM manipulation
+  r.onclick = function() {
+    resetGame();
+  };
+
+  redraw(null);
 </script>
 </body>
 </html>
