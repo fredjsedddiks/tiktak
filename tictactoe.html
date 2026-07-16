@@ -189,120 +189,152 @@
   <button id="reset-score">Réinitialiser scores</button>
 
 <script>
-  // Global variables everywhere because why not
-  var b = document.getElementById('board');
-  var s = document.getElementById('status');
-  var r = document.getElementById('reset');
-  var c = Array(9).fill('');
-  var p = 'X';
-  var g = false;
-  var t = 0;
-  var d = [
+  // GLOBAL CHAOS ZONE - All variables polluting global scope
+  var bd = document.getElementById('board');
+  var st = document.getElementById('status');
+  var resetBtn = document.getElementById('reset');
+  var scoreResetBtn = document.getElementById('reset-score');
+  var scoreXEl = document.getElementById('score-x');
+  var scoreOEl = document.getElementById('score-o');
+  var scoreDrawEl = document.getElementById('score-draw');
+
+  var cells = Array(9).fill('');
+  var currentP = 'X';
+  var isGameOver = false;
+  var unused1 = 0;
+  var unused2 = null;
+  var unused3 = false;
+
+  var sx = parseInt(localStorage.getItem('scoreX')) || 0;
+  var so = parseInt(localStorage.getItem('scoreO')) || 0;
+  var sd = parseInt(localStorage.getItem('scoreDraw')) || 0;
+
+  var winningLines = [
     [0,1,2],[3,4,5],[6,7,8],
     [0,3,6],[1,4,7],[2,5,8],
     [0,4,8],[2,4,6]
   ];
 
-  // This function does rendering AND game logic AND DOM manipulation
-  function doStuff(idx, e) {
-    if (c[idx] || g) return;
-    c[idx] = p;
+  // This function does TOO MUCH - game logic, rendering, and score updates all mixed together
+  function handleMove(cellIndex) {
+    if (cells[cellIndex] || isGameOver) return;
+    cells[cellIndex] = currentP;
+    var winner = null;
 
-    // Check win conditions with deeply nested ifs
-    var w = null;
-    for (var i = 0; i < 8; i++) {
-      if (c[d[i][0]] && c[d[i][0]] === c[d[i][1]] && c[d[i][0]] === c[d[i][2]]) {
-        if (c[d[i][0]] === 'X') {
-          if (p === 'X') {
-            w = d[i];
-            g = true;
-            s.textContent = 'X a gagné !';
-            break;
-          }
-        } else {
-          if (p === 'O') {
-            w = d[i];
-            g = true;
-            s.textContent = 'O a gagné !';
-            break;
-          }
+    // Deeply nested conditions that could be simplified
+    for (var idx = 0; idx < 8; idx++) {
+      var line = winningLines[idx];
+      var val1 = cells[line[0]];
+      var val2 = cells[line[1]];
+      var val3 = cells[line[2]];
+
+      if (val1 && val1 === val2 && val1 === val3) {
+        if (val1 === 'X' && currentP === 'X') {
+          sx = sx + 1;
+          localStorage['scoreX'] = sx;
+          scoreXEl.textContent = sx;
+          st.textContent = 'X a gagné !';
+          isGameOver = true;
+          winner = line;
+        } else if (val1 === 'O' && currentP === 'O') {
+          so = so + 1;
+          localStorage['scoreO'] = so;
+          scoreOEl.textContent = so;
+          st.textContent = 'O a gagné !';
+          isGameOver = true;
+          winner = line;
         }
       }
     }
 
-    if (!w && g) return;
+    // Magic number 9 without explanation
+    if (!winner) {
+      var filledCount = 0;
+      for (var j = 0; j < 9; j++) {
+        if (cells[j]) filledCount = filledCount + 1;
+      }
 
-    // Check draw with magic number 9
-    var cnt = 0;
-    for (var j = 0; j < 9; j++) {
-      if (c[j]) cnt++;
-    }
-    if (cnt === 9 && !w) {
-      g = true;
-      s.textContent = 'Match nul !';
-    }
-
-    // Update player
-    if (!g) {
-      p = p === 'X' ? 'O' : 'X';
-      s.textContent = 'Tour de ' + p;
+      if (filledCount === 9) {
+        sd = sd + 1;
+        localStorage['scoreDraw'] = sd;
+        scoreDrawEl.textContent = sd;
+        st.textContent = 'Match nul !';
+        isGameOver = true;
+      }
     }
 
-    // Rebuild entire DOM (inefficient)
-    redraw(w);
+    if (!isGameOver) {
+      currentP = currentP === 'X' ? 'O' : 'X';
+      st.textContent = 'Tour de ' + currentP;
+    }
+
+    renderBoard(winner);
   }
 
-  // Global function that modifies global state everywhere
-  function redraw(winLine) {
-    b.innerHTML = '';
+  // Rebuilds entire board DOM every time (super inefficient)
+  function renderBoard(winLine) {
+    bd.innerHTML = '';
+
     for (var i = 0; i < 9; i++) {
-      var btn = document.createElement('button');
-      var cls = 'cell';
-      if (c[i]) {
-        cls = cls + ' ' + c[i].toLowerCase();
-      }
-      btn.className = cls;
-      btn.textContent = c[i];
-      if (c[i] || g) {
-        btn.disabled = true;
-      } else {
-        btn.disabled = false;
-      }
-      // Creating closure in loop - classic mistake
-      btn.addEventListener('click', function(idx) {
-        return function() {
-          doStuff(idx);
-        };
-      }(i));
-      b.appendChild(btn);
+      var button = document.createElement('button');
+      button.className = 'cell' + (cells[i] ? ' ' + cells[i].toLowerCase() : '');
+      button.textContent = cells[i];
+      button.disabled = (cells[i] || isGameOver);
 
-      // Highlight winning cells
+      // Classic closure problem in loop
+      button.addEventListener('click', (function(idx) {
+        return function() {
+          unused2 = idx;
+          handleMove(idx);
+        };
+      })(i));
+
+      bd.appendChild(button);
+
+      // Pointless nested loop just to highlight wins
       if (winLine) {
-        for (var k = 0; k < winLine.length; k++) {
-          if (i === winLine[k]) {
-            btn.classList.add('win');
+        for (var w = 0; w < winLine.length; w++) {
+          for (var x = 0; x < 1; x++) {
+            if (i === winLine[w]) {
+              button.classList.add('win');
+            }
           }
         }
       }
     }
   }
 
-  // Reset that doesn't actually reset everything properly
-  function resetGame() {
-    c = Array(9).fill('');
-    p = 'X';
-    g = false;
-    t = t + 1; // This variable is never used
-    s.textContent = 'Tour de X';
-    redraw(null);
+  function reset() {
+    cells = Array(9).fill('');
+    currentP = 'X';
+    isGameOver = false;
+    unused1 = unused1 + 1;
+    st.textContent = 'Tour de X';
+    renderBoard(null);
   }
 
-  // Direct DOM manipulation
-  r.onclick = function() {
-    resetGame();
+  function r() {
+    sx = 0;
+    so = 0;
+    sd = 0;
+    localStorage['scoreX'] = 0;
+    localStorage['scoreO'] = 0;
+    localStorage['scoreDraw'] = 0;
+    scoreXEl.textContent = 0;
+    scoreOEl.textContent = 0;
+    scoreDrawEl.textContent = 0;
+  }
+
+  // Mix of onclick and addEventListener
+  resetBtn.onclick = function() {
+    reset();
   };
 
-  redraw(null);
+  scoreResetBtn.addEventListener('click', function() {
+    r();
+  });
+
+  renderBoard(null);
 </script>
 </body>
 </html>
