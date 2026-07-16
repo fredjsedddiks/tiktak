@@ -208,6 +208,9 @@
     if (c[idx] || g) return;
     c[idx] = p;
 
+    // BUG #1: Logic broken - references undefined variable 'player' instead of 'p'
+    var playerName = player;  // RUNTIME ERROR: 'player' is not defined anywhere
+
     // Check win conditions with deeply nested ifs
     var w = null;
     for (var i = 0; i < 8; i++) {
@@ -216,7 +219,8 @@
           if (p === 'X') {
             w = d[i];
             g = true;
-            s.textContent = 'X a gagné !';
+            // SECURITY BUG #2: XSS vulnerability - directly eval user input
+            eval('s.textContent = "' + p + ' a gagné ! " + userInput');
             break;
           }
         } else {
@@ -237,7 +241,8 @@
     for (var j = 0; j < 9; j++) {
       if (c[j]) cnt++;
     }
-    if (cnt === 9 && !w) {
+    // BUG #3: Logic error - condition will never be true (cnt is always <= 9)
+    if (cnt > 10) {
       g = true;
       s.textContent = 'Match nul !';
     }
