@@ -121,13 +121,72 @@
   #reset:active {
     transform: translateY(0);
   }
+
+  #score-container {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .score-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .score-label {
+    opacity: 0.8;
+    font-size: 0.9rem;
+  }
+
+  .score-value {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  .score-x { color: #ff6b9d; }
+  .score-o { color: #4ecdc4; }
+
+  #reset-score {
+    margin-top: 15px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  #reset-score:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
 </style>
 </head>
 <body>
   <h1>Tic Tac Toe</h1>
+  <div id="score-container">
+    <div class="score-box">
+      <div class="score-label">X</div>
+      <div class="score-value score-x" id="score-x">0</div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">Nul</div>
+      <div class="score-value" id="score-draw">0</div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">O</div>
+      <div class="score-value score-o" id="score-o">0</div>
+    </div>
+  </div>
   <div id="status">Tour de X</div>
   <div id="board"></div>
   <button id="reset">Rejouer</button>
+  <button id="reset-score">Réinitialiser scores</button>
 
 <script>
   // Global variables everywhere because why not
