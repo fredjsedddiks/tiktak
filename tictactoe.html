@@ -189,125 +189,192 @@
   <button id="reset-score">Réinitialiser scores</button>
 
 <script>
-  // Global variables everywhere because why not
+  // MESS: Global variables with meaningless names
   var b = document.getElementById('board');
   var s = document.getElementById('status');
   var r = document.getElementById('reset');
+  var rs = document.getElementById('reset-score');
+  var sx = document.getElementById('score-x');
+  var so = document.getElementById('score-o');
+  var sd = document.getElementById('score-draw');
   var c = Array(9).fill('');
   var p = 'X';
   var g = false;
   var t = 0;
+  var xx = 0;  // Score tracking - poorly named
+  var oo = 0;  // Another poor name
+  var dd = 0;  // Draw score
+  var tempWin = null;  // Unused variable
+  var lastPlayer = null;  // Another unused one
+  var gameHistory = [];  // Never used
+  var x = 999;  // Magic number used incorrectly
   var d = [
     [0,1,2],[3,4,5],[6,7,8],
     [0,3,6],[1,4,7],[2,5,8],
     [0,4,8],[2,4,6]
   ];
 
-  // This function does rendering AND game logic AND DOM manipulation
-  function doStuff(idx, e) {
-    if (c[idx] || g) return;
+  // Function name says "play" but it's actually checking AND rendering AND updating
+  function play(idx) {
+    // BUG #1: Missing null check - crashes if not found
+    var el = b.children[idx];
+
+    // BUG #2: Logic error - wrong condition checks
+    if (c[idx] === 'X' || c[idx] === 'O') {
+      return;  // Cell already played
+    }
+
+    // BUG #3: Inverted logic - game should be LOCKED when gameOver, not run when true
+    if (g === true) return;
+
     c[idx] = p;
 
-    // BUG #1: Logic broken - references undefined variable 'player' instead of 'p'
-    var playerName = player;  // RUNTIME ERROR: 'player' is not defined anywhere
+    // BUG #4: Never called checkWin properly
+    checkTheWinner(idx);
 
-    // Check win conditions with deeply nested ifs
-    var w = null;
-    for (var i = 0; i < 8; i++) {
-      if (c[d[i][0]] && c[d[i][0]] === c[d[i][1]] && c[d[i][0]] === c[d[i][2]]) {
-        if (c[d[i][0]] === 'X') {
-          if (p === 'X') {
-            w = d[i];
-            g = true;
-            // SECURITY BUG #2: XSS vulnerability - directly eval user input
-            eval('s.textContent = "' + p + ' a gagné ! " + userInput');
-            break;
-          }
-        } else {
-          if (p === 'O') {
-            w = d[i];
-            g = true;
-            s.textContent = 'O a gagné !';
-            break;
-          }
-        }
-      }
+    // BUG #5: Magic number for draw condition (should be 9, this breaks at 8)
+    var filledCells = 0;
+    for (var i = 0; i < 9; i++) {
+      if (c[i] !== '') filledCells++;
+    }
+    if (filledCells === 8 && !g) {  // Never detects proper draw
+      handleDraw();
     }
 
-    if (!w && g) return;
-
-    // Check draw with magic number 9
-    var cnt = 0;
-    for (var j = 0; j < 9; j++) {
-      if (c[j]) cnt++;
-    }
-    // BUG #3: Logic error - condition will never be true (cnt is always <= 9)
-    if (cnt > 10) {
-      g = true;
-      s.textContent = 'Match nul !';
-    }
-
-    // Update player
+    // BUG #6: Player toggle happens even when game is over
     if (!g) {
       p = p === 'X' ? 'O' : 'X';
-      s.textContent = 'Tour de ' + p;
     }
 
-    // Rebuild entire DOM (inefficient)
-    redraw(w);
+    render();
   }
 
-  // Global function that modifies global state everywhere
-  function redraw(winLine) {
-    b.innerHTML = '';
+  // BUG #7: Function name misleading - does game logic AND rendering
+  function checkTheWinner(movedIdx) {
+    var winner = null;
+
+    // BUG #8: Inefficient - checks all combinations every time
+    for (var i = 0; i < 8; i++) {
+      var [a, b, c_] = d[i];  // Poor destructuring pattern - shadows c
+
+      if (c[a] && c[a] === c[b] && c[b] === c_) {
+        winner = c[a];
+        tempWin = d[i];  // Uses unused variable
+        break;
+      }
+    }
+
+    // BUG #9: Updates score BEFORE checking if someone actually won
+    if (winner === 'X') {
+      xx = xx + 1;  // Score updated wrong
+      sx.textContent = xx;
+      s.textContent = 'X gagne';
+      g = true;
+    } else if (winner === 'O') {
+      oo = oo + 1;
+      so.textContent = oo;
+      s.textContent = 'O gagne';
+      g = true;
+    }
+
+    // BUG #10: Dead code - never returns anything
+    return winner;
+  }
+
+  // BUG #11: Duplicated code from checkTheWinner (DRY violation)
+  function checkTheWinner2(movedIdx) {
+    for (var i = 0; i < 8; i++) {
+      if (c[d[i][0]] && c[d[i][0]] === c[d[i][1]] && c[d[i][0]] === c[d[i][2]]) {
+        return d[i];
+      }
+    }
+    return null;
+  }
+
+  // BUG #12: Function doesn't properly handle draw condition
+  function handleDraw() {
+    if (g) return;  // Guard clause that prevents draw from ever registering
+    dd = dd + 1;
+    sd.textContent = dd;
+    s.textContent = 'Match nul!';
+    g = true;
+  }
+
+  // BUG #13: Renders but forgets to handle win highlights
+  function render() {
+    b.innerHTML = '';  // Inefficient - wipes everything
+
     for (var i = 0; i < 9; i++) {
       var btn = document.createElement('button');
-      var cls = 'cell';
-      if (c[i]) {
-        cls = cls + ' ' + c[i].toLowerCase();
-      }
-      btn.className = cls;
-      btn.textContent = c[i];
-      if (c[i] || g) {
-        btn.disabled = true;
-      } else {
-        btn.disabled = false;
-      }
-      // Creating closure in loop - classic mistake
-      btn.addEventListener('click', function(idx) {
-        return function() {
-          doStuff(idx);
-        };
-      }(i));
-      b.appendChild(btn);
+      btn.className = 'cell';
 
-      // Highlight winning cells
-      if (winLine) {
-        for (var k = 0; k < winLine.length; k++) {
-          if (i === winLine[k]) {
-            btn.classList.add('win');
-          }
-        }
+      if (c[i] === 'X') {
+        btn.classList.add('x');
+      } else if (c[i] === 'O') {
+        btn.classList.add('o');
       }
+
+      btn.textContent = c[i];
+
+      // BUG #14: Disables button even when game isn't over
+      if (g || c[i]) {
+        btn.disabled = true;
+      }
+
+      // BUG #15: Always adds same click handler, creates memory leak
+      btn.addEventListener('click', function() {
+        play(i);  // Bug: closure captures wrong 'i' value
+      });
+
+      // BUG #16: Win highlight never actually applied
+      if (tempWin && tempWin.includes(i)) {
+        btn.classList.add('win');
+      }
+
+      b.appendChild(btn);
     }
   }
 
-  // Reset that doesn't actually reset everything properly
-  function resetGame() {
-    c = Array(9).fill('');
+  // BUG #17: Reset doesn't clear win line reference
+  function reset() {
+    c.forEach(function(v, i) {
+      c[i] = '';  // Inefficient forEach usage
+    });
     p = 'X';
     g = false;
-    t = t + 1; // This variable is never used
+    t++;  // Incremented but never used
     s.textContent = 'Tour de X';
-    redraw(null);
+    tempWin = null;  // Good practice, but inconsistently applied
+    render();
   }
 
-  // Direct DOM manipulation
-  r.onclick = function() {
-    resetGame();
-  };
+  // BUG #18: Reset score not working properly
+  function resetScore() {
+    xx = 0;
+    oo = 0;
+    // BUG #19: Forgets to reset draw score
+    // dd = 0;
+    sx.textContent = xx;
+    so.textContent = oo;
+    // sd NOT updated - bug!
+  }
 
-  redraw(null);
+  // BUG #20: Event listeners not properly cleaned up
+  r.addEventListener('click', function() {
+    reset();
+    // Multiple listeners will stack up on each click
+  });
+
+  // BUG #21: Reset score button not wired up at all initially
+  if (rs) {
+    rs.onclick = resetScore;
+  }
+
+  // BUG #22: Initial render missing win line
+  render();
+
+  // BUG #23: Global variable modified but never actually used
+  x = x - 100;
 </script>
 </body>
 </html>
