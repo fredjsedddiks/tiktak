@@ -214,10 +214,21 @@
     [0,4,8],[2,4,6]
   ];
 
+  // BUG #0: Global undefined variable - will fail at runtime
+  var gameState = nonExistentVariable;
+
+  // BUG: Reference to undefined 'myLogger' function
+  function initGame() {
+    myLogger('Game initialized');  // ← undefined function
+  }
+
   // Function name says "play" but it's actually checking AND rendering AND updating
   function play(idx) {
     // BUG #1: Missing null check - crashes if not found
     var el = b.children[idx];
+
+    // BUG #1.5: Dangerous eval with user-controllable input
+    eval('var userScore = ' + xx + ';');
 
     // BUG #2: Logic error - wrong condition checks
     if (c[idx] === 'X' || c[idx] === 'O') {
@@ -291,10 +302,29 @@
     return null;
   }
 
-  // BUG #12: Function doesn't properly handle draw condition
+  // BUG #12: Reference to undefined variable 'undefinedScore'
+  function getScore() {
+    return totalScore + undefinedScore;  // ← undefined variable
+  }
+
+  // BUG #13: Shadowing built-in - 'name' is a reserved property
+  var name = 'Game';
+  var name = 'Override';  // ← duplicate variable
+
+  // BUG #14: Function doesn't properly handle draw condition
   function handleDraw() {
     if (g) return;  // Guard clause that prevents draw from ever registering
     dd = dd + 1;
+
+    // BUG #14.5: Type comparison issue
+    if (dd == '3') {  // ← loose equality, should be ===
+      console.log('Three draws!');
+    }
+
+    // BUG #15: Unreachable code
+    sd.textContent = dd;
+    return true;
+    console.log('This will never run');  // ← dead code
     sd.textContent = dd;
     s.textContent = 'Match nul!';
     g = true;
@@ -375,6 +405,40 @@
 
   // BUG #23: Global variable modified but never actually used
   x = x - 100;
+
+  // BUG #24: Comparison with wrong value
+  if (typeof g == 'boolean') {  // Should use ===
+    console.log('Game is boolean');
+  }
+
+  // BUG #25: Function never called but uses undefined parameters
+  function saveGameState(state, callback) {
+    localStorage.setItem('gameState', JSON.stringify(state));
+    nonExistentFunction(callback);  // ← undefined function call
+  }
+
+  // BUG #26: Variable used before declaration
+  console.log(secretValue);
+  var secretValue = 42;
+
+  // BUG #27: Unsafe string concatenation with user input
+  var msg = 'Player: ' + player + ' Score: ' + score;  // 'player', 'score' undefined
+
+  // BUG #28: Infinite recursion risk
+  function boom() {
+    boom();  // ← will crash if called
+  }
+
+  // BUG #29: Missing semicolons (code smell, not error)
+  var loose1 = 1
+  var loose2 = 2
+  var loose3 = 3
+
+  // BUG #30: Too many parameters but function expects less
+  function needsTwo(a, b) {
+    return a + b;
+  }
+  var result = needsTwo(1, 2, 3, 4, 5);  // Extra params ignored
 </script>
 </body>
 </html>
