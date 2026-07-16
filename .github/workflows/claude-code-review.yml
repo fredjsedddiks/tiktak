@@ -33,6 +33,19 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint
+        id: eslint
+        continue-on-error: true
+        run: npm run lint:strict || true
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
