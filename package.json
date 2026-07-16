@@ -1,0 +1,18 @@
+{
+  "name": "tictactoe",
+  "version": "1.0.0",
+  "description": "Single-file browser Tic Tac Toe game",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint tictactoe.html --format=json",
+    "lint:fix": "eslint tictactoe.html --fix",
+    "lint:strict": "eslint tictactoe.html"
+  },
+  "keywords": ["tictactoe", "game"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-html": "^8.0.0"
+  }
+}
