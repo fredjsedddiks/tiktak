@@ -375,6 +375,125 @@
 
   // BUG #23: Global variable modified but never actually used
   x = x - 100;
+
+  // ===== MEGA BUG ZONE =====
+
+  // BUG #24: Array index out of bounds - will crash
+  function getCellValue(index) {
+    return c[index + 10];  // ← index + 10 will be out of bounds
+  }
+
+  // BUG #25: Infinite loop - will freeze browser
+  function freezeGame() {
+    while (true) {
+      console.log('freezing...');
+    }
+  }
+
+  // BUG #26: Type mismatch - comparing string to number
+  if (filledCount == 9) {  // ← loose equality, not ===
+    handleDraw();
+  }
+
+  // BUG #27: Modifying loop variable inside loop - undefined behavior
+  function buggyLoop() {
+    for (var i = 0; i < 9; i++) {
+      i = i + 2;  // ← modifying loop counter
+      console.log(i);
+    }
+  }
+
+  // BUG #28: Function tries to use 'this' incorrectly
+  var gameObj = {
+    score: 0,
+    getScore: function() {
+      return undefined.score;  // ← will crash
+    }
+  };
+
+  // BUG #29: Callback hell - deeply nested callbacks
+  function requestData(callback) {
+    setTimeout(function() {
+      callback(function() {
+        callback(function() {
+          callback(function() {
+            console.log('nested');
+          });
+        });
+      });
+    }, 1000);
+  }
+
+  // BUG #30: Race condition - accessing shared mutable state
+  var sharedState = { count: 0 };
+  function incrementAsync() {
+    var temp = sharedState.count;
+    setTimeout(function() {
+      sharedState.count = temp + 1;  // ← race condition
+    }, 0);
+  }
+
+  // BUG #31: Memory leak - storing references forever
+  var leakArray = [];
+  function addToLeak() {
+    leakArray.push(new Array(1000000).fill('MEMORY LEAK'));
+  }
+
+  // BUG #32: NaN and undefined comparisons
+  var result = NaN === NaN;  // ← always false, NaN != NaN
+  if (result) {
+    console.log('this never executes');
+  }
+
+  // BUG #33: Truthy/falsy bugs
+  if (0) {
+    console.log('zero is falsy');
+  }
+  if ('0') {
+    console.log('string zero is truthy');  // ← executes!
+  }
+
+  // BUG #34: Prototype pollution vulnerability
+  var user = {};
+  user['__proto__']['isAdmin'] = true;  // ← dangerous!
+
+  // BUG #35: Missing return statement
+  function calculateScore() {
+    var score = 100 * 2;
+    // forgot return statement
+  }
+
+  // BUG #36: Parameter shadowing
+  function process(data) {
+    var data = null;  // ← shadows parameter
+    return data;
+  }
+
+  // BUG #37: Implicit global variable
+  function createGlobal() {
+    implicitGlobal = 'exists in global scope';  // ← no var/let/const
+  }
+
+  // BUG #38: Switch without break
+  function switchBug(x) {
+    switch(x) {
+      case 1:
+        console.log('one');
+        // missing break - falls through!
+      case 2:
+        console.log('two');
+      case 3:
+        console.log('three');
+    }
+  }
+
+  // BUG #39: Regex DoS vulnerability
+  var maliciousRegex = /^(a+)+$/;  // ← catastrophic backtracking
+  maliciousRegex.test('aaaaaaaaaaaaaaaa');
+
+  // BUG #40: JSON parse without try-catch
+  var json = JSON.parse(userInput);  // ← userInput undefined, will crash
+
 </script>
 </body>
 </html>
